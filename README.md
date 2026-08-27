@@ -1,100 +1,117 @@
-# Анализ влияния изображений на успешность товаров
+# Analysis of the Impact of Images on Product Success
 
-## Описание проекта
+## Project Description
 
-Этот проект направлен на исследование влияния визуальных характеристик товаров (изображений) на их успешность на маркетплейсе. В качестве прокси-метрики успешности использовалась комбинация количества отзывов и рейтинга товара.
+This project is aimed at studying the impact of visual characteristics of products (images) on their success on a marketplace. A combination of the number of reviews and the product rating was used as a proxy metric for success.
 
-## Структура репозитория
-``` bash
+## Repository Structure
+
+```bash
 .
-├── amazon_images          # Папка с изображениями товаров
-├── analysis.ipynb         # Основной ноутбук с анализом
-├── downloading.ipynb      # Ноутбук для загрузки датасета
-├── final_dataset.csv      # Табличные данные
+├── amazon_images          # Folder with product images
+├── analysis.ipynb         # Main notebook with the analysis
+├── downloading.ipynb      # Notebook for downloading the dataset
+├── final_dataset.csv      # Tabular data
 └── README.md
 ```
 
-## Особенности датасета
+## Dataset Features
 
-Изначально планировалось использовать датасет Fashion Product Images с Kaggle, но он был отклонен по следующим причинам:
-- Сильный дисбаланс в рейтингах (значения 9-11 составляют всего 0.11% выборки)
-- Недостаточное количество данных о рейтингах для значимого анализа
+Initially, it was planned to use the Fashion Product Images dataset from Kaggle, but it was rejected for the following reasons:
 
-Вместо этого был использован **Amazon Product Dataset**, который содержит:
-- 3403 товара с полной информацией
-- Рейтинги от 0 до 5
-- Количество отзывов
-- Изображения товаров
-- Дополнительные атрибуты (категория, продажи и др.)
+* Strong imbalance in ratings (values 9-11 account for only 0.11% of the sample)
+* Insufficient amount of rating data for meaningful analysis
 
-Важное ограничение: большинство изображений представляют собой обложки книг, журналов, фильмов и CD-дисков, что сужает сфе исследования до этих категорий товаров.
+Instead, the **Amazon Product Dataset** was used, which contains:
 
-## Методология
+* 3403 products with complete information
+* Ratings from 0 to 5
+* Number of reviews
+* Product images
+* Additional attributes (category, sales, etc.)
 
-### 1. Подготовка данных
-- Очистка и предобработка данных
-- Создание бинарной целевой переменной `target`:
-  - `success_score = log(reviews_total + 1) * reviews_avg_rating`
-  - Топ-20% товаров по success_score помечены как успешные (target=1)
-  - Остальные 80% - неуспешные (target=0)
+An important limitation: most images represent covers of books, magazines, movies, and CDs, which narrows the scope of the study to these product categories.
 
-### 2. Извлечение признаков
-**Визуальные признаки:**
-- Использована предобученная ResNet18
-- Извлечены эмбеддинги размерностью 512 для каждого изображения
-- Для отсутствующих изображений использованы нулевые векторы
+## Methodology
 
-**Табличные признаки:**
-- Числовые признаки: `salesrank` (нормализованы)
-- Категориальные признаки: `group` (one-hot encoding)
-- Текстовые эмбеддинги для категорий с помощью SentenceTransformer
+### 1. Data Preparation
 
-### 3. Построение моделей
-Использован CatBoostClassifier с регуляризацией для борьбы с переобучением. Сравнивались три подхода:
-1. Только табличные признаки
-2. Только эмбеддинги изображений
-3. Комбинированные признаки
+* Data cleaning and preprocessing
+* Creation of a binary target variable `target`:
 
-### 4. Кластеризация
-Проведена кластеризация эмбеддингов изображений с помощью KMeans для выявления визуальных паттернов успешных товаров.
+  * `success_score = log(reviews_total + 1) * reviews_avg_rating`
+  * The top 20% of products by success_score are marked as successful (target=1)
+  * The remaining 80% are unsuccessful (target=0)
 
-## Результаты
+### 2. Feature Extraction
 
-### Метрики качества моделей:
-| Модель | ROC-AUC | F1-Score |
-|--------|---------|----------|
-| Табличные признаки | 0.825 | 0.574 |
-| Эмбеддинги изображений | 0.614 | 0.351 |
-| Комбинированные признаки | 0.825 | 0.557 |
+**Visual features:**
+
+* A pre-trained ResNet18 was used
+* 512-dimensional embeddings were extracted for each image
+* Zero vectors were used for missing images
+
+**Tabular features:**
+
+* Numerical features: `salesrank` (normalized)
+* Categorical features: `group` (one-hot encoding)
+* Text embeddings for categories using SentenceTransformer
+
+### 3. Model Building
+
+CatBoostClassifier with regularization was used to prevent overfitting. Three approaches were compared:
+
+1. Tabular features only
+2. Image embeddings only
+3. Combined features
+
+### 4. Clustering
+
+Clustering of image embeddings was performed using KMeans to identify visual patterns of successful products.
+
+## Results
+
+### Model Quality Metrics:
+
+| Model             | ROC-AUC | F1-Score |
+| ----------------- | ------- | -------- |
+| Tabular features  | 0.825   | 0.574    |
+| Image embeddings  | 0.614   | 0.351    |
+| Combined features | 0.825   | 0.557    |
 
 ![](./metrics.png)
 
-### Кластеризация:
-- Оптимальное количество кластеров: 4
-- Не выявлено значимой разницы в доле успешных товаров между кластерами
-- Визуальный анализ не показал четких паттернов успешности
+### Clustering:
+
+* Optimal number of clusters: 4
+* No significant difference in the share of successful products between clusters was identified
+* Visual analysis did not show clear success patterns
 
 ![](./cluster.png)
 
-## Выводы
+## Conclusions
 
-### Влияние изображений:
-Добавление визуальных признаков **не улучшило** качество модели:
-- Модель на табличных данных показала наилучшие результаты
-- Эмбеддинги изображений сами по себе показали низкое качество
-- Комбинированный подход не дал значимого улучшения
+### Impact of Images:
 
-### Возможные причины:
-1. **Особенности датасета**: изображения являются в основном обложками, которые могут не нести решающей информации для потребительского выбора
-2. **Дисбаланс классов**: только 20% товаров помечены как успешные
-3. **Ограничения модели**: возможно, требуется более сложная архитектура или дообучение
+Adding visual features **did not improve** model performance:
 
-### Рекомендации по улучшению:
-1. Использование техник борьбы с дисбалансом (SMOTE, подбор class_weights)
-2. Эксперименты с другими моделями (нейронные сети, ансамбли)
-3. Использование более современных методов обработки изображений (CLIP, трансформеры)
-4. Сбор более сбалансированного датасета с разнообразными изображениями
+* The model based on tabular data showed the best results
+* Image embeddings alone showed low performance
+* The combined approach did not provide a significant improvement
 
+### Possible Reasons:
 
-## Заключение
-Исследование показало, что для данного типа товаров (книги, журналы, медиа) визуальные характеристики не являются определяющим фактором успешности. Основную предсказательную силу имеют табличные признаки, визуальные характеристики менее важны по сравнению с другими факторами (автор, содержание, жанр) для данной категории товаров. Для товаров, где визуальная составляющая более важна (одежда, аксессуары), результаты могут отличаться.
+1. **Dataset characteristics**: the images are mostly covers, which may not contain decisive information for consumer choice
+2. **Class imbalance**: only 20% of products are marked as successful
+3. **Model limitations**: a more complex architecture or fine-tuning may be required
+
+### Recommendations for Improvement:
+
+1. Use techniques to address class imbalance (SMOTE, class_weights tuning)
+2. Experiment with other models (neural networks, ensembles)
+3. Use more modern image processing methods (CLIP, transformers)
+4. Collect a more balanced dataset with diverse images
+
+## Conclusion
+
+The study showed that for this type of products (books, magazines, media), visual characteristics are not a determining factor in success. Tabular features have the main predictive power, while visual characteristics are less important compared to other factors (author, content, genre) for this product category. For products where the visual component is more important (clothing, accessories), the results may differ.
